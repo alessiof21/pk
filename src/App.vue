@@ -1,12 +1,13 @@
 <template>
   <div class="main__flex-container">
     <div class="flex__list">
-        <ul v-for="list in lists" :id="list.id" @click="chooseList(list.id)"> 
+        <ul v-for="list in lists" :id="`ul_${list.id}`"> 
           <div class="checkbox-flex">
-            <div :id="list.id" class="my-checkbox" :class="list.checked ? 'dot' : 'none'" @click="checkList(list.id)"></div>
-            <p class="title__text"> list {{ list.id }}</p>
+            <div class="list__image" :class="chosenList === list.id ? 'open' : '' " @click="chooseList(list.id)"></div>
+            <div :id="`list__checkbox${list.id}`" class="my-checkbox" :class="list.checked ? 'dot' : 'none'" @click="checkList(list.id)"></div>
+            <p class="list__text"> list {{ list.id }}</p>
           </div>
-          <li v-for="elem in list.elements" :hidden="chosenList !== list.id">
+          <li v-for="elem in list.elements" :hidden="chosenList !== list.id" :id="`ul_${list.id}_li_${elem.id}`">
             <div class="item__flex-container">
               <span class="item__elements">
                 <input :id="`list${list.id}_elem${elem.id}`" type="checkbox" :checked="elem.checked" @click="elem.checked = !elem.checked"/> 
@@ -27,8 +28,8 @@
         <div class="list__flex-container">
           <div class="list__title">
             <div class="title__flex">
-              <p class="title__text">list {{ list.id }}</p>
-              <button v-if="chosenList === list.id" class="title__button" @click="sorted = !sorted"> {{ sorted !== true ? 'Сортировать' :  'Перемешать'}}</button>
+              <p class="list__text">list {{ list.id }}</p>
+              <button v-if="chosenList === list.id" class="list__button" @click="sorted = !sorted"> {{ sorted !== true ? 'Сортировать' :  'Перемешать'}}</button>
             </div>
           </div>
           <div class="list__body" v-if="chosenList === list.id">
@@ -70,7 +71,7 @@
             elements: [
               {
                 id: 1,
-                number: 20,
+                number: 20, 
                 checked: false,
                 color: '#FF0000'
               },
@@ -214,28 +215,33 @@
               }
             ]
           }
-        ]
+        ] // Массив list'ов с item'ами, можно перенести его во vuex, если, например, его нужно на разных страницах использовать (поставил ограничение на количество квадратиков (максимум 99, можно поставить больше; минимум 0))
       }
     },
     methods: {
       chooseList(id) {
         if (this.chosenList !== id) { // Если кликаем по другой вкладке списка list, которая еще не выбрана
+          if (this.chosenList != 0 && this.lists[this.chosenList-1].checked === true) { // Если закрываем list, который был с точкой - убираем точку (обязательно проверяем, чтобы был выбран какой-то из list)
+            this.checkList(this.chosenList);
+          }
           this.chosenList = id; 
-          this.sorted = false;
+        } else { // Кликаем по той же вкладке -> закроем ее
+          this.chosenList = 0;
         }
+        this.sorted = false; // По умолчанию у нас всегда первым показывается неотсортированный список квадратиков
       },
-      checkList(id) {
+      checkList(id) { // Кликаем по чекбоксу list
         if (id !== this.chosenList) { // Если кликаем по чекбоксу, который не открыт, то не делаем выбор/снятие выбора с элементов
           return;
         }
         let flag = 0;
         const maxFlag = this.lists[id-1].elements.length;
-        for (let i = 0; i < this.lists[id-1].elements.length; i++) {
-          if (this.lists[id-1].elements[i].checked === true) {
+        for (let i = 0; i < this.lists[id-1].elements.length; i++) { 
+          if (this.lists[id-1].elements[i].checked === true) { // Посчитаем, сколько флажков item'ов выделено
             ++flag;
           }
         }
-        if (this.lists[id-1].checked === true) {
+        if (this.lists[id-1].checked === true) { // Если чекбокс был точкой - убираем точку
           this.lists[id-1].checked = false;
         } else {
           if (flag === 0) { // Ничего из item не выделено
@@ -247,7 +253,7 @@
                 this.lists[id-1].elements[i].checked = false;
               }
           } else {
-            if (this.lists[id-1].checked === false) {
+            if (this.lists[id-1].checked === false) { // Выделены не все
               this.lists[id-1].checked = true;
             } 
           }
@@ -281,7 +287,7 @@
 </script>
 
 <style>
-  .main__flex-container {
+  .main__flex-container { 
     display: flex;
     flex-direction: row;
     justify-content: space-evenly;
@@ -290,35 +296,47 @@
     border: 2px solid black;
     width: 30%;
   }
-  .item__flex-container {
-    display: flex;
-    flex-direction: row;
-    justify-content: space-between;
-    align-items: center;
-    padding: 1vh 4vw 1vh 2vw;
+
+  ul {
+    list-style-type: none;
   }
+
   .checkbox-flex {
     display: flex;
     flex-direction: row;
     justify-content: start;
     align-items: center;
   }
-  .title__text {
+
+  .list__image {
+    background-image: url('@/img/list.png');
+    background-size: cover;
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+    margin-right: 5px;
+  }
+  .open {
+    transform: rotate(90deg);
+  }
+
+  .list__text {
     margin-left: 5px;
   }
-  .title__button {
+  .list__button {
     border-radius: 5px;
     border: 2px solid rgb(34, 140, 240);
     background: transparent;
     color: #fff;
     background: rgb(34, 140, 240);
   }
-  .title__button:hover {
+  .list__button:hover {
     opacity: 0.7;
   }
-  .title__button:active{
+  .list__button:active{
     opacity: 1;
   }
+
   .my-checkbox {
     width: 20px;
     height: 20px;
@@ -333,15 +351,24 @@
     background-size: cover;
   }
 
+  .item__flex-container {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1vh 4vw 1vh 2vw;
+  }
   .item__elements {
     width: 30%;
   }
+
   .options__flex-container {
     display: flex;
     flex-direction: row;
     justify-content: space-between;
     align-items: center;
   }
+
   .input__number {
     width: 50%;
   }
@@ -350,15 +377,14 @@
     height: 15px;
     margin: 2px 2px;
   }
-  ul {
-    list-style-type: none;
-  }
+
   input[type="color"] {
     padding: 0;
   }
   input[type="color" i]::-webkit-color-swatch-wrapper {
     padding: 0;
   }
+
   .list__elements {
     margin: 2vh 2vw;
     border: 1px solid black;
@@ -398,4 +424,5 @@
     justify-content: start;
     flex-wrap: wrap;
   }
+
 </style>
